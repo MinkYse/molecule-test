@@ -238,8 +238,6 @@
     - name: restart nginx
       service: name=nginx state=restarted enabled=yes
 
-
-
 - name: Linux configuration
   hosts: all
   become: true
@@ -247,7 +245,6 @@
     - vars.yml
 
   tasks:
-
     - name: Create DevOps user with sudo privs
       user:
         name: "{{ add_usr }}"
