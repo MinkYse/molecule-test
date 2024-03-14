@@ -1,7 +1,7 @@
 default_linux_user: ubuntu
 default_linux_user_pass: password
 
-hostA_ip: 172.17.0.1
+hostA_ip: 172.17.0.0
 hostB_ip: 172.17.0.2
 
 add_usr: devops
