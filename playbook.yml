@@ -218,7 +218,6 @@
         - restart nginx
       tags: nginx
 
-
     - name: Add iptables rule to block hostA IP to 80 port
       iptables:
         chain: INPUT
