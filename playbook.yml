@@ -228,7 +228,6 @@
         jump: DROP
       tags: nginx
 
-
   handlers:
     - name: nginx systemd
       systemd:
