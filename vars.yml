@@ -1,0 +1,14 @@
+default_linux_user: ubuntu
+default_linux_user_pass: password
+
+hostA_ip: 172.17.0.1
+hostB_ip: 172.17.0.2
+
+add_usr: devops
+add_pass: devops
+
+copy_local_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+
+
+server_name: localhosts
+allow_world_readable_tmpfiles: true

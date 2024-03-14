@@ -1,0 +1,299 @@
+
+
+- name: Install common packages
+  hosts: all
+  become: true
+  vars_files:
+    - vars.yml
+
+  tasks:
+
+    - name: Update apt repo and cache on all Ubuntu boxes
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages on servers
+      apt:
+        upgrade: dist
+        force_apt_get: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - wget
+          - python3-psycopg2
+          - acl
+          - gnupg2
+          - iptables
+          - openssh-server
+          - curl
+        state: latest
+
+- name: Install and set up Postgres 14
+  hosts: hostA
+  become: yes
+  gather_facts: False
+  vars_files:
+    - vars.yml
+  tasks:
+
+    - name: Update apt and install packages
+      apt:
+        pkg:
+          - postgresql
+          - postgresql-contrib
+          - python3-pip
+        state: latest
+        update_cache: true
+
+    - name: Install Python packages
+      pip:
+        name: psycopg2-binary
+
+    - name: Ensure PostgreSQL is listening on *
+      lineinfile:
+        dest: /etc/postgresql/12/main/postgresql.conf
+        regexp: '^listen_addresses\s*='
+        line: "listen_addresses='*'"
+        state: present
+      notify: Restart Postgresql
+
+    - name: Start and enable posgresql
+      service: "name={{ item }} state=started enabled=yes"
+      with_items:
+        - postgresql
+
+    - name: Create users
+      postgresql_user:
+        name: "{{ item.username }}"
+        password: "{{ item.password }}"
+      become: true
+      become_user: postgres
+      loop:
+        - username: app
+          password: app
+        - username: custom
+          password: custom
+        - username: service
+          password: service
+
+    - name: Create databases
+      postgresql_db:
+          name: "{{ item }}"
+          state: present
+      become: true
+      become_user: postgres
+      loop:
+        - app
+        - custom
+
+    - name: Set privs on databases
+      postgresql_privs:
+          db: "{{ item.database }}"
+          type: database
+          roles: "{{ item.user }}"
+          privs: "{{ item.privs }}"
+          grant_option: false
+      become: true
+      become_user: postgres
+      loop:
+        - database: app
+          user: app
+          privs: ALL
+        - database: custom
+          user: custom
+          privs: ALL
+
+    - name: READ ONLY PRIVS TO USER SERVICE IN DB APP
+      postgresql_privs:
+        database: "{{ item }}"
+        roles: service
+        objs: ALL_IN_SCHEMA
+        privs: SELECT
+      become: true
+      become_user: postgres
+      loop:
+        - app
+        - custom
+
+    - name: Allow access to port 5432 from hostB.renue
+      become: true
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 5432
+        source: hostB.renue
+        jump: ACCEPT
+
+    - name: Deny access to port 5432 from other hosts
+      become: true
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 5432
+        jump: DROP
+
+    #- name: ALTER DEFAULT PRIVILEGES ON DATABASE library TO reader, step 1
+    #  become: true
+    #  become_user: postgres
+    #  community.postgresql.postgresql_privs:
+    #    db: app
+    #    objs: TABLES,SEQUENCES
+    #    privs: SELECT
+    #    type: default_privs
+    #    role: service
+
+    #- name: Simple select query to acme db
+    #  become_user: postgres
+    #  become: true
+    #  postgresql_query:
+    #    db: app
+    #    query: GRANT pg_read_all_data TO service;
+
+    - name: Comment all pg_hba.conf
+      become: true
+      replace:
+        path: /etc/postgresql/12/main/pg_hba.conf
+        regexp: "{{ item }}"
+        replace:  "#{{ item }}"
+      loop:
+        - local
+        - host
+
+    - name: Add config in pg_hba.conf for connection only from server B
+      blockinfile:
+        dest: /etc/postgresql/12/main/pg_hba.conf
+        block: |
+          host    all              all              hostB.renue           md5
+      notify: Restart Postgresql
+
+  handlers:
+    - name: Restart Postgresql
+      systemd:
+        name: postgresql
+        state: restarted
+
+    - name: Start Postgresql
+      systemd:
+        name: postgresql
+        state: started
+
+    - name: Enable Postgresql
+      systemd:
+        name: postgresql
+        enabled: yes
+
+
+- name: Install and set up nginx
+  hosts: hostB
+  become: yes
+  gather_facts: False
+  vars_files:
+    - vars.yml
+  tasks:
+
+    - name: Install Nginx
+      apt:
+        name=nginx
+        state=latest
+      when:
+        ansible_os_family == "Debian"
+      notify:
+        - nginx systemd
+      tags: nginx
+
+    - name: Remove default_server parameter from deafult cfg
+      become: true
+      replace:
+        path: /etc/nginx/sites-enabled/default
+        regexp: '80 default_server'
+        replace: '80'
+      tags: nginx
+
+    - name: Add nginx conf
+      become: true
+      template:
+        src: templates/nginx.conf
+        dest: "/etc/nginx/sites-enabled/{{ server_name }}.conf"
+      notify:
+        - restart nginx
+      tags: nginx
+
+
+    - name: Add iptables rule to block hostA IP to 80 port
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 80
+        source: "{{ hostA_ip }}"
+        jump: DROP
+      tags: nginx
+
+
+  handlers:
+    - name: nginx systemd
+      systemd:
+        name: nginx
+        enabled: yes
+        state: started
+    - name: restart nginx
+      service: name=nginx state=restarted enabled=yes
+
+
+
+- name: Linux configuration
+  hosts: all
+  become: true
+  vars_files:
+    - vars.yml
+
+  tasks:
+
+    - name: Create DevOps user with sudo privs
+      user:
+        name: "{{ add_usr }}"
+        group: sudo
+        password: "{{ add_pass | password_hash('sha512') }}"
+        update_password: on_create
+        create_home: true
+        state: present
+
+          #- name: Copy pub key to devops home dir
+          #authorized_key:
+          #user: "{{ add_usr }}"
+          #key: "{{ copy_local_key }}"
+          #state: present
+
+    - name: Remove pass for devops sudo
+      lineinfile:
+        dest: /etc/sudoers
+        line: "{{ add_usr }} ALL=(ALL) NOPASSWD:ALL"
+        state: present
+      become: true
+
+    - name: Disable SSH password auth
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        line: 'PasswordAuthentication no'
+        state: present
+      become: true
+
+    - name: Find all of files inside sshd_config.d
+      find:
+        paths: "/etc/ssh/sshd_config.d/"
+        patterns: "*.conf"
+      register: ssh_configs
+
+    - name: Disable pass auth in files in sshd_config.d folder
+      replace:
+        path: "{{ item.path }}"
+        regexp: '^PasswordAuthentication yes'
+        replace: 'PasswordAuthentication no'
+      with_items: "{{ ssh_configs.files }}"
+
+    - name: Restart the SSH daemon
+      systemd:
+        name: sshd
+        state: restarted
