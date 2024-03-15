@@ -78,8 +78,8 @@
 
     - name: Create databases
       postgresql_db:
-          name: "{{ item }}"
-          state: present
+        name: "{{ item }}"
+        state: present
       become: true
       become_user: postgres
       loop:
@@ -88,11 +88,11 @@
 
     - name: Set privs on databases
       postgresql_privs:
-          db: "{{ item.database }}"
-          type: database
-          roles: "{{ item.user }}"
-          privs: "{{ item.privs }}"
-          grant_option: false
+        db: "{{ item.database }}"
+        type: database
+        roles: "{{ item.user }}"
+        privs: "{{ item.privs }}"
+        grant_option: false
       become: true
       become_user: postgres
       loop:
@@ -154,7 +154,7 @@
       replace:
         path: /etc/postgresql/12/main/pg_hba.conf
         regexp: "{{ item }}"
-        replace:  "#{{ item }}"
+        replace: "#{{ item }}"
       loop:
         - local
         - host
