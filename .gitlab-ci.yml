@@ -1,5 +1,5 @@
 variables: 
-  SCRIPT_NAME: playbook.yml
+  SCRIPT_NAME: playbook2.yml
 
 include:
   - project: 'kkm/TestDevOps'
