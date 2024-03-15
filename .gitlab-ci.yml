@@ -1,3 +1,6 @@
+variables: 
+  SCRIPT_NAME: playbook.yml
+
 include:
   - project: 'kkm/TestDevOps'
     file: '.gitlab-ci.yml'
