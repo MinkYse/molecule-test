@@ -4,4 +4,4 @@ variables:
 include:
   - project: 'common/ci-devops'
     file: '.gitlab-ci.yml'
-    ref: 'v1.0.0'
+    ref: 'master'
