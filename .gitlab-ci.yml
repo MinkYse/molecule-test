@@ -5,4 +5,3 @@ include:
   - project: 'common/ci-devops'
     file: '.gitlab-ci.yml'
     ref: 'main'
-
