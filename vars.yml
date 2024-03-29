@@ -9,6 +9,5 @@ add_pass: devops
 
 copy_local_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
 
-
 server_name: localhosts
 allow_world_readable_tmpfiles: true
