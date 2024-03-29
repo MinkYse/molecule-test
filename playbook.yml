@@ -251,7 +251,6 @@
         update_password: on_create
         create_home: true
         state: present
-
           #- name: Copy pub key to devops home dir
           #authorized_key:
           #user: "{{ add_usr }}"
