@@ -256,7 +256,6 @@
           #user: "{{ add_usr }}"
           #key: "{{ copy_local_key }}"
           #state: present
-
     - name: Remove pass for devops sudo
       lineinfile:
         dest: /etc/sudoers
