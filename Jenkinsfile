@@ -9,8 +9,8 @@ pipeline {
   stages {
     stage('run test') {
       steps {
-        sh 'rmdir  -rf /tmp/molecule/test/default'
-        sh 'molecule --debug test'
+        sh 'rm -rf /tmp/molecule/test/default'
+        sh 'molecule test'
       }
     }
   }
