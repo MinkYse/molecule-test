@@ -9,7 +9,7 @@ pipeline {
   stages {
     stage('run test') {
       steps {
-        sh 'molecule test'
+        sh 'molecule --debug test'
       }
     }
   }
