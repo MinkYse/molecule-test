@@ -7,4 +7,4 @@
       ansible.builtin.debug:
         msg: "This is the effective test"
 
-- import_playbook: ../../playbook.yml
+- import_playbook: ../../playbook.yaml
