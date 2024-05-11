@@ -9,6 +9,9 @@ pipeline {
   stages {
     stage('run test') {
       steps {
+        sh 'pwd'
+        sh 'ls'
+        sh 'ls ../..'
         sh 'molecule test'
       }
     }
