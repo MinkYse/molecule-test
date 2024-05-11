@@ -9,6 +9,7 @@ pipeline {
   stages {
     stage('run test') {
       steps {
+        sh 'MOLECULE_NO_LOG="false"'
         sh 'molecule test'
       }
     }
