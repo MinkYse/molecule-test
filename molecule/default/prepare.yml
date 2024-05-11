@@ -1,0 +1,23 @@
+---
+- name: Prepare the Molecule Test Resources
+  hosts: all
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - wget
+          - iptables
+          - openssh-server
+          - curl
+          - iputils-ping
+        state: latest
+        update_cache: yes
+
+- name: Prepare hostB
+  hosts: hostB
+  tasks:
+    - name: Install postgresql-client
+      apt:
+        name:
+          - postgresql-client
+        state: latest
