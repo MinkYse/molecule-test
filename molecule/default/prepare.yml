@@ -1,6 +1,8 @@
 ---
 - name: Prepare the Molecule Test Resources
   hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   tasks:
     - name: Install required packages
       apt:
@@ -15,6 +17,8 @@
 
 - name: Prepare hostB
   hosts: hostB
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   tasks:
     - name: Install postgresql-client
       apt:
